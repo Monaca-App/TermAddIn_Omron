@@ -1,0 +1,87 @@
+; ==============================================================================
+; Term Macro Script: オムロンPLCデータ収集 (OMRON FINS / HostLink)
+; 生成AI: Antigravity (Gemini 4 Carbon (Medium))
+; 対象システム: オムロン SYSMAC CS / CJ / CP / NJ / NX シリーズ (FINS/UDP, FINS/TCP, HostLink)
+; ==============================================================================
+TITLE, "オムロンPLCデータ収集 (OMRON FINS / HostLink)"
+
+; ------------------------------------------------------------------------------
+; コマンド定義: PORT_OPEN (通信ポート接続)
+; ------------------------------------------------------------------------------
+COMMAND, "PORT_OPEN"
+,PARAM, PROTOCOL, List, "通信プロトコル", "UDP", "TCP", "Serial"
+,PARAM, ENDPOINT, Text, "接続先IPまたはCOMポート", "192.168.250.1"
+,PARAM, PORT_OPT, Text, "ポート番号または通信条件", "9600"
+,PARAM, DEST_NET, Text, "宛先ネットワーク番号", "0"
+,PARAM, DEST_NODE, Text, "宛先ノード番号", "0"
+,PARAM, SRC_NODE, Text, "自局ノード番号", "1"
+,PARAM, UNIT_NO, Text, "ユニットまたは局番", "0"
+,SEQUENCE, 10, Fins_Mode, "$PROTOCOL$", "$DEST_NET$", "$DEST_NODE$", "$SRC_NODE$", "$UNIT_NO$"
+,SEQUENCE, 20, Fins_Open, "$ENDPOINT$", "$PORT_OPT$", "$PROTOCOL$"
+,SEQUENCE, 30, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: READ_START (読み出し開始・初期確認)
+; ------------------------------------------------------------------------------
+COMMAND, "READ_START", ON
+,PARAM, DEV_TYPE, List, "デバイス種別", "DM", "CIO", "WR", "HR", "AR", "EM"
+,PARAM, ADDR_STATUS, Text, "状態確認チャネル", "100"
+,PARAM, ADDR_CTRL, Text, "制御コマンドチャネル", "101"
+,PARAM, POINTS, Text, "アクセス点数", "1"
+,PARAM, VAL_INIT_CTRL, Text, "開始要求設定値", "0x0001"
+,PARAM, STATUS, Work, "判定結果", ""
+,SEQUENCE, 10, Fins_ReadWord, "$DEV_TYPE$$ADDR_STATUS$", "$POINTS$", "STATUS", "DEC"
+,SEQUENCE, 20, Judge, EQU, "$STATUS$", "0", #ERR_EXIT#
+,SEQUENCE, 30, Fins_WriteWord, "$DEV_TYPE$$ADDR_CTRL$", "$VAL_INIT_CTRL$"
+,SEQUENCE, 40, Exit
+,SEQUENCE, #ERR_EXIT#, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: NUM_READ (数値データ読み出し)
+; ------------------------------------------------------------------------------
+COMMAND, "NUM_READ", "RESULT_DATA"
+,PARAM, DEV_TYPE, List, "デバイス種別", "DM", "CIO", "WR", "HR", "AR", "EM"
+,PARAM, DEV_ADDR, Text, "読出チャネル番号", "200"
+,PARAM, POINTS, Text, "読出点数", "1"
+,PARAM, ADDR_CTRL, Text, "復旧制御チャネル", "101"
+,PARAM, VAL_RECOVERY, Text, "復旧制御設定値", "0x0002"
+,PARAM, RESULT_DATA, Range, "読出データ結果", ""
+,SEQUENCE, #RETRY#, Fins_ReadWord, "$DEV_TYPE$$DEV_ADDR$", "$POINTS$", "RESULT_DATA", "DEC"
+,SEQUENCE, 20, Judge, NEQ, "$RESULT_DATA$", "ERROR_TIMEOUT", #RETRY_FAIL#
+,SEQUENCE, 30, Judge, NEQ, "$RESULT_DATA$", "ERROR_INCOMPLETE", #RETRY_FAIL#
+,SEQUENCE, 40, Exit
+,SEQUENCE, #RETRY_FAIL#, Fins_WriteWord, "$DEV_TYPE$$ADDR_CTRL$", "$VAL_RECOVERY$"
+,SEQUENCE, 60, Jump, #RETRY#
+
+; ------------------------------------------------------------------------------
+; コマンド定義: REG_READ (チャネルHEX一括読み出し)
+; ------------------------------------------------------------------------------
+COMMAND, "REG_READ", "RESULT_DATA"
+,PARAM, DEV_TYPE, List, "デバイス種別", "DM", "CIO", "WR", "HR", "AR", "EM"
+,PARAM, DEV_ADDR, Text, "読出チャネル番号", "200"
+,PARAM, POINTS, Text, "読出点数", "2"
+,PARAM, RESULT_DATA, Range, "チャネルHEXデータ", ""
+,SEQUENCE, 10, Fins_ReadWord, "$DEV_TYPE$$DEV_ADDR$", "$POINTS$", "RESULT_DATA", "HEX"
+,SEQUENCE, 20, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: BIT_CHECK (運転ステータスビット確認)
+; ------------------------------------------------------------------------------
+COMMAND, "BIT_CHECK", "BIT_STATUS"
+,PARAM, BIT_DEV, Text, "監視先頭ビット", "CIO0.00"
+,PARAM, BIT_POINTS, Text, "読出ビット点数", "4"
+,PARAM, BIT_STATUS, Range, "ビット状態結果", ""
+,SEQUENCE, 10, Fins_ReadBit, "$BIT_DEV$", "$BIT_POINTS$", "BIT_STATUS"
+,SEQUENCE, 20, Exit
+
+; ------------------------------------------------------------------------------
+; コマンド定義: PORT_CLOSE (通信ポート切断)
+; ------------------------------------------------------------------------------
+COMMAND, "PORT_CLOSE"
+,PARAM, DEV_TYPE, List, "デバイス種別", "DM", "CIO", "WR", "HR", "AR", "EM"
+,PARAM, ADDR_CTRL, Text, "制御コマンドチャネル", "101"
+,PARAM, VAL_RESET, Text, "復旧初期設定値", "0x0000"
+,SEQUENCE, 10, Fins_WriteWord, "$DEV_TYPE$$ADDR_CTRL$", "$VAL_RESET$"
+,SEQUENCE, 20, Fins_Close
+,SEQUENCE, 30, Exit
+
