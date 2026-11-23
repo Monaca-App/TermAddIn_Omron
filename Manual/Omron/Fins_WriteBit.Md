@@ -2,7 +2,8 @@
 
 ## 概要
 
-**Fins_WriteBit** は、OMRON FINS メモリエリア書込コマンド（ビット単位：`MRC=01`, `SRC=02`）を用いて、PLC の **ビットデバイス（CIO0.00, W10.05, H0.01, DM100.00 等）へ ON/OFF 状態を一括書込** するコマンドです。
+**Fins_WriteBit** は、OMRON FINS メモリエリア書込コマンド（ビット単位：`MRC=01`, `SRC=02`）を用いて、PLC の **ビットデバイス（CIO, WR, HR, AR, DM, EM, TIM, CNT）へ ON/OFF 状態を一括書込** する通信制御系コマンドです。
+書き込み完了後、PLC からの FINS／HostLink 応答終了コード（正常: `0x0000`）を検証します。
 
 ---
 
@@ -11,15 +12,16 @@
 ### コマンド構文
 
 ```csv
-,SEQUENCE, [ステップキー], Fins_WriteBit, "[Device]", "[Values]"
+,SEQUENCE, [ステップキー], Fins_WriteBit, [Device], [Values], "[Reserved]"
 ```
 
 ### パラメータ（引数）一覧
 
-| 引数位置 | パラメータ名 | 必須/任意 | 型・制約 | 説明 |
-| :--- | :--- | :---: | :--- | :--- |
-| 第 1 引数 | `Device` | 必須 | 文字列（例: `"CIO10.00"`, `"W0.05"`, `"H1.00"`） | 書き込みを開始する先頭ビットアドレス（`.00`〜`.15`）。 |
-| 第 2 引数 | `Values` | 必須 | 文字列（例: `"1, 0, 1"` または `"ON, OFF, ON"`） | 書き込むビット状態列（`1`/`0`, `ON`/`OFF`, `TRUE`/`FALSE` をカンマまたは空白区切りで指定）。 |
+| 引数位置 | 引数名 | 必須/任意 | 説明・制約 |
+| :--- | :--- | :---: | :--- |
+| 第 1 引数 | `Device` | **必須** | 書き込みを開始する先頭ビットアドレス（対応エリア: `CIO`［接頭辞省略可］, `WR`/`W`, `HR`/`H`, `AR`/`A`, `DM`/`D`, `EM`/`E`/`E0_`〜`EC_` の `.00`〜`.15` ビット指定、および `TIM`/`T`, `CNT`/`C` 完了フラグ。例: `"CIO10.00"`, `"W0.05"`, `"H1.00"`, `"DM100.00"`）。 |
+| 第 2 引数 | `Values` | **必須** | 書き込むビット状態列（`"1"`/`"ON"`/`"TRUE"` が ON、それ以外が OFF。カンマまたは空白区切りで指定し、要素数から書込点数が自動算出されます。例: `"1, 0, 1"` または `"ON, OFF, ON"`）。 |
+| 第 3 引数 | `Reserved` | 任意 | 互換用の予備引数（`ValidateParamRange(2, 3)` により 3 引数まで許容されますが、指定された値は参照されません）。 |
 
 ---
 
@@ -29,7 +31,7 @@
 * **動的置換（`$`）**: 引数内で `$PARAMキー$` のように記述すると、実行時に変数プール（PARAM）の値へ動的置換されます。（適用可能な引数: 全引数対応）
 * **ジャンプ先指定（`#`）**: 本コマンドはジャンプ制御を行わないため適用されません。（適用可能な引数: 非適用）
 * **共通コマンド指定（`@`）**: 本コマンドは外部マクロを呼び出さないため、共通コマンド呼び出し記法は適用されません。（適用可能な引数: 非適用）
-* **カンマのエスケープ**: 通信条件文字列（例: `"9600,E,7,1"`）や複数データのカンマ区切り値を単一引数として渡す場合は、必ず `"..."` と二重引用符で囲んで記述します。
+* **カンマのエスケープ**: 複数データのカンマ区切り値（例: `"1, 0, 1"`）を単一引数として渡す場合は、必ず `"..."` と二重引用符で囲んで記述します。
 * **エイリアス（別名）**: `Fins_Write_Bit`, `Analysis_Fins_WriteBit`
 
 ---
@@ -53,8 +55,8 @@ COMMAND, "SAMPLE_FINS_WRITEBIT", ""
 
 ### 実行時の挙動・変数変化
 
-* **実行前の状態**: Term 通信エンジンが初期化され、必要な通信パラメータおよび変数プール（`PARAM`）が準備されている状態。
-* **実行後の状態**: ステップ実行により `Fins_WriteBit` の通信制御・プロトコル処理が正常に遂行され、結果または回線状態が更新されます。
+* **実行前の状態**: `Fins_Open` により OMRON PLC（`192.168.250.1:9600`, UDP）との通信回線が開設されている状態。
+* **実行後の状態**: ステップ `020` で FINS メモリエリア書込（`MRC=01`, `SRC=02`、ビット単位 3 点）フレームが送受信され、終了コード `0x0000` が確認されると `param.IsCommandGo = true` となってステップ `030` の `Fins_Close` へ進みます。
 
 ---
 
@@ -63,22 +65,25 @@ COMMAND, "SAMPLE_FINS_WRITEBIT", ""
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Script as "シーケンス実行エンジン"
+    participant Driver as "TermSequenceDriver (実行エンジン)"
     participant Cmd as "Fins_WriteBitCommand"
-    participant Trans as "Omron 通信トランスポート"
-    participant Buf as "受信バッファ / 変数プール"
+    participant Engine as "FinsDeviceParser / FinsFrameEngine"
+    participant Trans as "FinsTransportClient.Shared"
 
-    Script->>Cmd: Func(parent, param)
+    Driver->>Driver: ライセンス検証 (ValidateStep)
+    Driver->>Cmd: Func(parent, param)
     activate Cmd
-    Cmd->>Cmd: ライセンス・パラメータ範囲検証 ($PARAM$ 展開)
-    alt 引数および通信状態が正常な場合
-        Cmd->>Trans: プロトコル電文送受信 / 回線制御実行
-        Trans-->>Cmd: 正常応答フレーム / ステータス返却
-        Cmd->>Buf: 結果格納・状態更新 (IsCommandGo = true)
-        Cmd-->>Script: 正常完了 (次ステップへ進行)
-    else パラメータ不正・タイムアウト・異常応答の場合
-        Cmd->>Cmd: エラーログ出力 (_log.LogError)
-        Cmd-->>Script: 安全停止またはエラー結果格納
+    Cmd->>Cmd: ValidateParamRange(2, 3) ＆ $PARAM$ 展開
+    Cmd->>Engine: Parse(devStr) ＆ ParseBitValues(valsStr) ＆ BuildBitWriteFrame
+    Cmd->>Trans: TransceiveFinsFrame(reqFrame, param)
+    alt 正常 FINS / HostLink 応答 (終了コード 0x0000)
+        Cmd-->>Driver: 正常完了 (IsCommandGo = true)
+    else 無応答タイムアウト または FINS 異常終了コード応答
+        Cmd->>Cmd: SetErrorAndHalt(-1, errMsg)
+        Cmd-->>Driver: 異常停止 (IsCommandGo = false)
+    else 引数範囲外 または デバイス表記不正例外
+        Cmd->>Cmd: _log.LogError / _log.LogCritical ＆ SetErrorAndHalt
+        Cmd-->>Driver: 異常停止 (IsCommandGo = false)
     end
     deactivate Cmd
 ```
@@ -89,10 +94,10 @@ sequenceDiagram
 
 入力データの異常や実行時エラーに対し、解析・実行エンジンが実行するセーフティ規約です。
 
-1. **引数範囲・プロトコル書式バリデーション保護**:
-   - 必須引数の欠落、デバイス表記・数値範囲の不正、または余剰引数が指定された場合は `_log.LogError` に詳細を記録し、`SetErrorAndHalt` により異常電文の送出を未然に遮断します。
-2. **通信タイムアウト・異常応答・排他ドメイン保護**:
-   - 相手機器の無応答タイムアウト、NAK／異常終了コード応答、または他通信ドメインとの排他競合が発生した場合は、例外クラッシュを起こさず安全にエラーハンドリングを行います。
+1. **引数範囲およびデバイス構文の検証**:
+   - 引数が 1 個以下または 4 個以上の場合は `ValidateParamRange(2, 3)` により `_log.LogError` と `SetErrorAndHalt` で遮断します。未対応エリアやビット位置不正により `FinsDeviceParser.Parse` が例外を送出した場合は、`catch` 節で `_log.LogCritical` に記録し `SetErrorAndHalt(-1, ex.Message)` で安全停止します。
+2. **書込応答タイムアウトおよび FINS 異常終了コード時の停止**:
+   - 受信データが空（タイムアウト）の場合、または PLC が非 `0x0000` の FINS 異常終了コードや不正フレームを返した場合は、`SetErrorAndHalt(-1, ...)` を呼び出してシーケンスを即座に安全停止します。
 
 ---
 
@@ -111,4 +116,4 @@ sequenceDiagram
 | No | テストカテゴリ | テスト条件（入力値） | 期待される結果（出力値） | 検証の目的 / 観点 |
 | :---: | :--- | :--- | :--- | :--- |
 | **1** | 正常系 | `IsSimulationMode = true` 環境下で引数 `"W10.05"`, `"1,0,1"` および擬似 FINS `0102` 正常応答（`C0 00 02 00 01 00 00 00 00 01 01 02 00 00`）を与えて実行 | `!param.HasError` かつ `param.IsCommandGo == true` で 3 点ビット一括書込が正常完了する | ビットアドレス指定での FINS 0102 ビット書込フレーム構築および正常応答検証 |
-| **2** | 異常系 | 引数不足・過剰（`ValidateParamRange(2, 3)` 違反）、応答タイムアウト（空応答）、または FINS 異常終了コード応答 | `SetErrorAndHalt(-1, ...)`（または引数検証エラー）によりエラーを記録して安全に停止する | 引数境界検証および書込タイムアウト・PLC 異常応答時のフェイルセーフ検証 |
+| **2** | 異常系 | 引数 0 個（`new TermSequence { Name = "Fins_WriteBit" }`）で `Func(null, invalidParam)` を実行 | `ValidateParamRange(2, 3)` により拒否され、`invalidParam.HasError == true` かつ `!invalidParam.IsCommandGo` となる | 必須引数欠落時のバリデーション拒否検証 |
