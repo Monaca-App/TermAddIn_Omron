@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="530" viewBox="0 0 660 530">
+  <defs>
+    <filter id="winShadow" x="-3%" y="-3%" width="106%" height="108%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#0F172A" flood-opacity="0.16" />
+    </filter>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <style>
+      .ui { font-family: 'Yu Gothic UI', 'Meiryo UI', 'Segoe UI', sans-serif; }
+      .mono { font-family: 'Consolas', 'BIZ UDGothic', 'MS Gothic', monospace; }
+      .grp-box { fill: #F8FAFC; stroke: #CBD5E1; stroke-width: 1.2; rx: 4; }
+      .grp-lbl { font-family: 'Yu Gothic UI', 'Meiryo UI', sans-serif; font-size: 11.5px; font-weight: 700; fill: #1E293B; }
+      .input-box { fill: #FFFFFF; stroke: #94A3B8; stroke-width: 1; rx: 3; }
+      .input-hi { fill: #EFF6FF; stroke: #2563EB; stroke-width: 1.3; rx: 3; }
+      .btn-box { fill: #FFFFFF; stroke: #94A3B8; stroke-width: 1; rx: 4; }
+      .btn-pri { fill: #2563EB; stroke: #1D4ED8; stroke-width: 1; rx: 4; }
+      .callout-box { fill: #FFFBEB; stroke: #F59E0B; stroke-width: 1.3; rx: 6; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="660" height="530" fill="#F8FAFC" rx="10" />
+
+  <g transform="translate(26, 20)" filter="url(#winShadow)">
+    <rect x="0" y="0" width="608" height="438" rx="6" fill="#F3F4F6" stroke="#94A3B8" stroke-width="1.4" />
+    <path d="M 0 6 Q 0 0 6 0 L 602 0 Q 608 0 608 6 L 608 30 L 0 30 Z" fill="url(#titleGrad)" />
+    <text x="14" y="20" class="ui" font-size="12.5" font-weight="700" fill="#FFFFFF">通信ポートのプロパティ — [OMRON FINS] タブ</text>
+
+    <path d="M 14 62 L 14 42 Q 14 38 18 38 L 108 38 Q 112 38 112 42 L 112 62 Z" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" />
+    <text x="63" y="53" class="ui" font-size="11.5" fill="#475569" text-anchor="middle">コマンド集</text>
+    <path d="M 114 62 L 114 40 Q 114 36 118 36 L 234 36 Q 238 36 238 40 L 238 62 Z" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.2" />
+    <text x="176" y="53" class="ui" font-size="11.5" font-weight="700" fill="#1D4ED8" text-anchor="middle">OMRON FINS</text>
+
+    <rect x="14" y="61" width="580" height="328" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.2" />
+    <line x1="115" y1="61" x2="237" y2="61" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- GroupBox 1: OMRON PLC 接続方式・Ethernet 設定 -->
+    <rect x="28" y="76" width="552" height="90" class="grp-box" />
+    <rect x="38" y="68" width="214" height="16" fill="#FFFFFF" />
+    <text x="42" y="80" class="grp-lbl">OMRON PLC 接続方式・Ethernet 設定</text>
+
+    <text x="42" y="106" class="ui" font-size="11" fill="#334155">通信方式:</text>
+    <rect x="148" y="90" width="166" height="24" class="input-hi" />
+    <text x="158" y="106" class="mono" font-size="11.5" font-weight="700" fill="#1E3A8A">FINS/UDP</text>
+    <polygon points="300,100 308,100 304,106" fill="#1E40AF" />
+    <text x="328" y="106" class="ui" font-size="10.5" fill="#64748B">(FINS/UDP / FINS/TCP / Serial HostLink)</text>
+
+    <text x="42" y="144" class="ui" font-size="11" fill="#334155">ホスト / IPアドレス:</text>
+    <rect x="148" y="128" width="166" height="24" class="input-box" />
+    <text x="158" y="144" class="mono" font-size="11.5" fill="#0F172A">192.168.250.1</text>
+
+    <text x="326" y="144" class="ui" font-size="11" fill="#334155">ポート番号:</text>
+    <rect x="392" y="128" width="76" height="24" class="input-box" />
+    <text x="402" y="144" class="mono" font-size="11.5" fill="#0F172A">9600</text>
+    <rect x="476" y="128" width="90" height="24" class="btn-box" />
+    <text x="521" y="144" class="ui" font-size="10.5" font-weight="600" fill="#1E293B" text-anchor="middle">標準 (9600)</text>
+
+    <!-- GroupBox 2: シリアル (HostLink) 接続設定 -->
+    <rect x="28" y="176" width="552" height="58" class="grp-box" />
+    <rect x="38" y="168" width="164" height="16" fill="#FFFFFF" />
+    <text x="42" y="180" class="grp-lbl">シリアル (HostLink) 接続設定</text>
+
+    <text x="42" y="212" class="ui" font-size="11" fill="#334155">COMポート:</text>
+    <rect x="116" y="196" width="136" height="24" class="input-box" />
+    <text x="126" y="212" class="mono" font-size="11.5" fill="#475569">COM10</text>
+    <rect x="258" y="196" width="56" height="24" class="btn-box" />
+    <text x="286" y="212" class="ui" font-size="10.5" fill="#1E293B" text-anchor="middle">更新</text>
+
+    <text x="334" y="212" class="ui" font-size="11" fill="#334155">速度・条件:</text>
+    <rect x="406" y="196" width="160" height="24" class="input-box" />
+    <text x="416" y="212" class="mono" font-size="11.5" fill="#475569">9600,E,7,2</text>
+
+    <!-- GroupBox 3: FINS ルーティング・HostLink 局番設定 -->
+    <rect x="28" y="244" width="552" height="82" class="grp-box" />
+    <rect x="38" y="236" width="222" height="16" fill="#FFFFFF" />
+    <text x="42" y="248" class="grp-lbl">FINS ルーティング・HostLink 局番設定</text>
+
+    <text x="42" y="276" class="ui" font-size="11" fill="#334155">宛先ネット (DNA):</text>
+    <rect x="148" y="260" width="56" height="24" class="input-box" />
+    <text x="158" y="276" class="mono" font-size="11.5" fill="#0F172A">0</text>
+    <text x="218" y="276" class="ui" font-size="11" fill="#334155">宛先ノード (DA1):</text>
+    <rect x="322" y="260" width="56" height="24" class="input-box" />
+    <text x="332" y="276" class="mono" font-size="11.5" fill="#0F172A">1</text>
+    <text x="394" y="276" class="ui" font-size="11" fill="#334155">自局ノード (SA1):</text>
+    <rect x="500" y="260" width="66" height="24" class="input-box" />
+    <text x="510" y="276" class="mono" font-size="11.5" fill="#0F172A">1</text>
+
+    <text x="42" y="310" class="ui" font-size="11" fill="#334155">ユニット / 局番:</text>
+    <rect x="148" y="294" width="56" height="24" class="input-box" />
+    <text x="158" y="310" class="mono" font-size="11.5" fill="#0F172A">0</text>
+    <text x="218" y="310" class="ui" font-size="11" fill="#334155">タイムアウト (ms):</text>
+    <rect x="322" y="294" width="84" height="24" class="input-box" />
+    <text x="332" y="310" class="mono" font-size="11.5" fill="#0F172A">3000</text>
+
+    <!-- GroupBox 4: 設定概要 -->
+    <rect x="28" y="336" width="552" height="44" class="grp-box" />
+    <rect x="38" y="328" width="60" height="16" fill="#FFFFFF" />
+    <text x="42" y="340" class="grp-lbl">設定概要</text>
+    <text x="42" y="366" class="ui" font-size="11" fill="#475569">通信パラメータ:</text>
+    <text x="138" y="366" class="mono" font-size="11.5" font-weight="700" fill="#1E3A8A">FINS/UDP 192.168.250.1:9600 [DNA:0, DA1:1, SA1:1]</text>
+
+    <rect x="200" y="398" width="96" height="30" class="btn-pri" />
+    <text x="248" y="417" class="ui" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">OK</text>
+    <rect x="312" y="398" width="96" height="30" class="btn-box" />
+    <text x="360" y="417" class="ui" font-size="12" font-weight="600" fill="#1E293B" text-anchor="middle">キャンセル</text>
+  </g>
+
+  <rect x="26" y="470" width="608" height="44" class="callout-box" />
+  <text x="42" y="489" class="ui" font-size="11" font-weight="700" fill="#92400E">メイン画面の［通信モード(M)］で「OMRON FINS / Sysmac」選択時に自動表示</text>
+  <text x="42" y="506" class="ui" font-size="10.5" fill="#451A03">・「通信方式」の選択に応じて Ethernet 欄またはシリアル（HostLink）欄の入力可否が自動で切り替わります。</text>
+</svg>
